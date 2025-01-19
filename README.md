@@ -1,6 +1,8 @@
 # A8mini-gimbal-camera-control-rust
 
-This project is a Rust port of A8mini-gimbal-camera-control (C version), which was originally created by thiagolages. During the porting process, certain architectural changes were made to better fit the Rust programming language
+This project is a Rust port of A8mini-gimbal-camera-control (C version), which was originally created by thiagolages. 
+
+During the porting process, certain architectural changes were made to better fit the Rust programming language
 - Code for SIYI's A8 mini Gimbal Camera. Allows yaw/pitch control, as well as Auto Center, Zoom, etc.
 
 ## Setup
