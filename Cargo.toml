@@ -1,0 +1,6 @@
+[package]
+name = "A8mini-gimbal-camera-control-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
