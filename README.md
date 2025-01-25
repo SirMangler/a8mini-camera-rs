@@ -37,7 +37,7 @@ During the porting process, certain architectural changes were made to better fi
 - 22 - Acquire Attitude Data
 - 23 - Set Video Output as HDMI (Only available on A8 mini, restart to take effect)
 - 24 - Set Video Output as CVBS (Only available on A8 mini, restart to take effect)
-- 25 -  Turn Off both CVBS and HDMI Output (Only available on A8 mini, restart to take effect)
+- 25 - Turn Off both CVBS and HDMI Output (Only available on A8 mini, restart to take effect)
 - 26 - Read Range from Laser Rangefinder(Low byte in the front, high byte in the back, available on ZT30)
 
 **Note**: More commands might be supported by the camera but may not be included in the list of implemented commands.
