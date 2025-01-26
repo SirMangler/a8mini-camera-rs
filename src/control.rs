@@ -65,13 +65,13 @@ impl Command for A8MiniComplexCommand {
                 byte_arr
             },
             A8MiniComplexCommand::SetYawPitchAngle(theta_yaw, theta_pitch) => {
-                let mut byte_arr: Vec<u8> = vec![0x55,0x66,0x01,0x02,0x00,0x00,0x00,0x0E];
+                let mut byte_arr: Vec<u8> = vec![0x55,0x66,0x01,0x04,0x00,0x00,0x00,0x0e];
 
-                byte_arr.push(theta_yaw.clamp(-135, 135) as u8);
-                byte_arr.push(theta_pitch.clamp(-90, 25) as u8);
+                byte_arr.extend_from_slice(&theta_yaw.clamp(-135, 135).to_be_bytes());
+                byte_arr.extend_from_slice(&theta_pitch.clamp(-90, 25).to_be_bytes());
 
                 byte_arr.extend_from_slice(&checksum::crc16_calc(&byte_arr, 0));
-                
+
                 byte_arr
             },
         }
@@ -79,5 +79,22 @@ impl Command for A8MiniComplexCommand {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn test_complex_command_creation_angle() {
+        let computed_command = A8MiniComplexCommand::SetYawPitchAngle(130, -20).to_bytes();
+        let expected_command: [u8; 14] = [0x55,0x66,0x01,0x04,0x00,0x00,0x00,0x0e,0x00,0x82,0xff,0xec,0x8f,0xad];
+        assert_eq!(computed_command, expected_command);
+    }
+
+    #[test]
+    fn test_complex_command_creation_speed() {
+        let computed_command = A8MiniComplexCommand::SetYawPitchSpeed(104, -20).to_bytes();
+        let expected_command: [u8; 12] = [0x55,0x66,0x01,0x02,0x00,0x00,0x00,0x07,0x64,0xec,0xbd,0xdf];
+        assert_eq!(computed_command, expected_command);
+    }
+}
 
