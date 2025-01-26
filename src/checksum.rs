@@ -2,7 +2,7 @@ use crate::constants;
 
 /// CRC16 Checksum
 /// - G(X) = X^16+X^12+X^5+1
-pub fn crc16_calc(arr: &[u8], crc_init: u16) -> u16 {
+pub fn crc16_calc(arr: &[u8], crc_init: u16) -> [u8; 2] {
 	let mut crc16: u16 = crc_init;
 	
 	for &val in arr {
@@ -11,7 +11,7 @@ pub fn crc16_calc(arr: &[u8], crc_init: u16) -> u16 {
 		crc16 = (crc16 << 8) ^ oldcrc16;
 	}
 	
-	crc16
+	crc16.to_le_bytes()
 }
 
 
@@ -27,7 +27,7 @@ mod tests {
 			let computed_crc16 = crc16_calc(&cmd[.. (cmd.len() - 2)], 0);
 			let expected_crc16 = &cmd[(cmd.len() - 2)..];
 			assert_eq!(
-				format!("{:x?}", computed_crc16.to_le_bytes()),
+				format!("{:x?}", computed_crc16),
 				format!("{:x?}", expected_crc16),
 			);
 		}
