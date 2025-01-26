@@ -14,8 +14,7 @@ pub struct A8Mini {
 }
 
 impl A8Mini {
-	/// Connects to the A8 mini from port 8080 located at the default IP 192.168.144.25 and port number 37260.
-	pub async fn connect() -> Result<A8Mini, Box<dyn Error>> {
+	pub async fn connect() -> Result<Self, Box<dyn Error>> {
 		Ok(Self::connect_to(constants::CAMERA_IP, constants::CAMERA_COMMAND_PORT, constants::CAMERA_HTTP_PORT, "8080", "80").await?)
 	}
 
@@ -30,15 +29,16 @@ impl A8Mini {
 		Ok(camera)
 	}
 
-	pub async fn send_command_blind(&self, command: control::A8MiniCommand) -> Result<(), Box<dyn Error>> {
-		if self.command_socket.send(constants::COMMANDS[command as usize]).await? == 0 {
+	pub async fn send_command_blind(&self, command: control::A8MiniSimpleCommand) -> Result<(), Box<dyn Error>> {
+		println!("{:?}", constants::HARDCODED_COMMANDS[command as usize]);
+		if self.command_socket.send(constants::HARDCODED_COMMANDS[command as usize]).await? == 0 {
 			return Err("No bytes sent.".into());
 		}
 
 		Ok(())
 	}
 
-	pub async fn send_command(&self, command: control::A8MiniCommand) -> Result<[u8; RECV_BUFF_SIZE], Box<dyn Error>> {
+	pub async fn send_command(&self, command: control::A8MiniSimpleCommand) -> Result<[u8; RECV_BUFF_SIZE], Box<dyn Error>> {
 		self.send_command_blind(command).await?;
 		let mut recv_buffer = [0; RECV_BUFF_SIZE];
 		if self.command_socket.recv(&mut recv_buffer).await? == 0  {
@@ -60,4 +60,16 @@ impl A8Mini {
 
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+	use super::*;
+
+	#[tokio::test]
+	async fn test_send_command_blind() -> Result<(), Box<dyn Error>> {
+		let cam: A8Mini = A8Mini::connect().await?;
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft).await?;
+
+
+		Ok(())
+	}
+}

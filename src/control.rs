@@ -1,6 +1,6 @@
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum A8MiniCommand {
+pub enum A8MiniSimpleCommand {
     AutoCenter = 0, // handled ACK (sta)
     RotateUp = 1, // handled ACK (sta)
     RotateDown = 2, // handled ACK (sta)
@@ -28,10 +28,22 @@ pub enum A8MiniCommand {
     SetVideoOutputCVBS = 24,
     SetVideoOutputOff = 25,
     LaserRangefinderInformation = 26,
+    RebootCamera = 27,
+    RebootGimbal = 28,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum A8MiniComplexCommand {
+    SetYawPitchSpeed(u16, u16),
+    SetYawSpeed(u16),
+    SetPitchSpeed(u16),
+    SetYawPitchAngle(u16, u16),
+    SetYawAngle(u16),
+    SetPitchAngle(u16),
+}
+
+
 pub enum A8MiniCommandResponse {
-    // Most standard responses
     Failure = 0,
     Success = 1,
 }
