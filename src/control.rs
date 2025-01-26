@@ -1,3 +1,9 @@
+use crate::{checksum, constants};
+
+
+pub trait Command {
+    fn to_bytes(self) -> Vec<u8>;
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum A8MiniSimpleCommand {
@@ -32,24 +38,44 @@ pub enum A8MiniSimpleCommand {
     RebootGimbal = 28,
 }
 
+impl Command for A8MiniSimpleCommand {
+    fn to_bytes(self) -> Vec<u8> {
+        constants::HARDCODED_COMMANDS[self as usize].to_vec()
+    }
+}
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum A8MiniComplexCommand {
-    SetYawPitchSpeed(u16, u16),
-    SetYawSpeed(u16),
-    SetPitchSpeed(u16),
-    SetYawPitchAngle(u16, u16),
-    SetYawAngle(u16),
-    SetPitchAngle(u16),
+    SetYawPitchSpeed(i8, i8),
+    SetYawPitchAngle(i16, i16),
 }
 
+impl Command for A8MiniComplexCommand {
+    fn to_bytes(self) -> Vec<u8> {
+        match self {
+            A8MiniComplexCommand::SetYawPitchSpeed(v_yaw, v_pitch) => {
+                let mut byte_arr: Vec<u8> = vec![0x55,0x66,0x01,0x02,0x00,0x00,0x00,0x07];
 
-pub enum A8MiniCommandResponse {
-    Failure = 0,
-    Success = 1,
-}
+                byte_arr.push(v_yaw.clamp(-100, 100) as u8);
+                byte_arr.push(v_pitch.clamp(-100, 100) as u8);
 
-pub enum A8MiniHttpQuery {
-    
+                byte_arr.extend_from_slice(&checksum::crc16_calc(&byte_arr, 0));
+
+                byte_arr
+            },
+            A8MiniComplexCommand::SetYawPitchAngle(theta_yaw, theta_pitch) => {
+                let mut byte_arr: Vec<u8> = vec![0x55,0x66,0x01,0x02,0x00,0x00,0x00,0x0E];
+
+                byte_arr.push(theta_yaw.clamp(-135, 135) as u8);
+                byte_arr.push(theta_pitch.clamp(-90, 25) as u8);
+
+                byte_arr.extend_from_slice(&checksum::crc16_calc(&byte_arr, 0));
+                
+                byte_arr
+            },
+        }
+    }
 }
 
 

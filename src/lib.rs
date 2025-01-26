@@ -29,16 +29,15 @@ impl A8Mini {
 		Ok(camera)
 	}
 
-	pub async fn send_command_blind(&self, command: control::A8MiniSimpleCommand) -> Result<(), Box<dyn Error>> {
-		println!("{:?}", constants::HARDCODED_COMMANDS[command as usize]);
-		if self.command_socket.send(constants::HARDCODED_COMMANDS[command as usize]).await? == 0 {
+	pub async fn send_command_blind<T: control::Command>(&self, command: T) -> Result<(), Box<dyn Error>> {
+		if self.command_socket.send(command.to_bytes().as_slice()).await? == 0 {
 			return Err("No bytes sent.".into());
 		}
 
 		Ok(())
 	}
 
-	pub async fn send_command(&self, command: control::A8MiniSimpleCommand) -> Result<[u8; RECV_BUFF_SIZE], Box<dyn Error>> {
+	pub async fn send_command<T: control::Command>(&self, command: T) -> Result<[u8; RECV_BUFF_SIZE], Box<dyn Error>> {
 		self.send_command_blind(command).await?;
 		let mut recv_buffer = [0; RECV_BUFF_SIZE];
 		if self.command_socket.recv(&mut recv_buffer).await? == 0  {
