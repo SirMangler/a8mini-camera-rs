@@ -1,4 +1,7 @@
+use std::time::Duration;
 pub const RECV_BUFF_SIZE: usize = 64;
+pub const RECV_TIMEOUT: Duration = Duration::from_millis(500);
+
 pub const CAMERA_IP: &str = "192.168.144.25";
 pub const CAMERA_COMMAND_PORT: &str = "37260";
 pub const CAMERA_HTTP_PORT: &str = "82";

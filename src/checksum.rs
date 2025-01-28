@@ -1,6 +1,6 @@
 use crate::constants;
 
-/// CRC16 Checksum
+/// Computes CRC16 checksum given byte array. Output is little endian.
 /// - G(X) = X^16+X^12+X^5+1
 pub fn crc16_calc(arr: &[u8], crc_init: u16) -> [u8; 2] {
 	let mut crc16: u16 = crc_init;

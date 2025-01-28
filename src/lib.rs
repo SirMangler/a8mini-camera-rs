@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
 
 use std::error::Error;
-use constants::RECV_BUFF_SIZE;
-use tokio::net::UdpSocket;
+use bincode::deserialize;
+use tokio::{net::UdpSocket, time::timeout};
 
 pub mod checksum;
 pub mod constants;
 pub mod control;
 
+#[derive(Debug)]
 pub struct A8Mini {
 	command_socket: UdpSocket,
 	http_socket: UdpSocket,
@@ -30,21 +31,37 @@ impl A8Mini {
 	}
 
 	pub async fn send_command_blind<T: control::Command>(&self, command: T) -> Result<(), Box<dyn Error>> {
+		println!("[DEBUG] Sending command with bytes: {:?}", command.to_bytes());
+		println!("[DEBUG] Sending command with DATA_LEN: {:?} | CMD_ID: {:?}", command.to_bytes()[3], command.to_bytes()[7]);
+
 		if self.command_socket.send(command.to_bytes().as_slice()).await? == 0 {
 			return Err("No bytes sent.".into());
 		}
 
+		println!("[DEBUG] Command sent successfully.");
+
 		Ok(())
 	}
 
-	pub async fn send_command<T: control::Command>(&self, command: T) -> Result<[u8; RECV_BUFF_SIZE], Box<dyn Error>> {
+	pub async fn send_command<T: control::Command>(&self, command: T) -> Result<[u8; constants::RECV_BUFF_SIZE], Box<dyn Error>> {
 		self.send_command_blind(command).await?;
-		let mut recv_buffer = [0; RECV_BUFF_SIZE];
-		if self.command_socket.recv(&mut recv_buffer).await? == 0  {
+		let mut recv_buffer = [0; constants::RECV_BUFF_SIZE];
+
+		println!("[DEBUG] Waiting for response.");
+		let recv_len = timeout(constants::RECV_TIMEOUT, self.command_socket.recv(&mut recv_buffer)).await??;
+		if recv_len == 0  {
 			return Err("No bytes received.".into());
 		}
 
+		println!("[DEBUG] Response of size {} received successfully.", recv_len);
+
 		Ok(recv_buffer)
+	}
+
+	pub async fn get_attitude_information(&self) -> Result<control::A8MiniAtittude, Box<dyn Error>> {
+		let attitude_bytes = self.send_command(control::A8MiniSimpleCommand::AttitudeInformation).await?;
+		let attitude_info: control::A8MiniAtittude = deserialize(&attitude_bytes)?;
+		Ok(attitude_info)
 	}
 
 	// pub async fn make_http_query_blind(&self) -> Result<String, Box<dyn Error>> {
@@ -61,14 +78,76 @@ impl A8Mini {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use std::thread::sleep;
+	use std::time::Duration;
 
 	#[tokio::test]
-	async fn test_send_command_blind() -> Result<(), Box<dyn Error>> {
+	async fn test_send_simple_commands_blind() -> Result<(), Box<dyn Error>> {
 		let cam: A8Mini = A8Mini::connect().await?;
 
 		cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft).await?;
+		sleep(Duration::from_millis(500));
+		
+		cam.send_command_blind(control::A8MiniSimpleCommand::RotateRight).await?;
+		sleep(Duration::from_millis(1000));
 
+		cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft).await?;
+		sleep(Duration::from_millis(500));
 
+		cam.send_command_blind(control::A8MiniSimpleCommand::StopRotation).await?;
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::RotateUp).await?;
+		sleep(Duration::from_millis(500));
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::RotateDown).await?;
+		sleep(Duration::from_millis(500));
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::StopRotation).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter).await?;
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_send_complex_commands_blind() -> Result<(), Box<dyn Error>> {
+		let cam: A8Mini = A8Mini::connect().await?;
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(50, 50)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(50, 10)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(-25, -15)).await?;
+		sleep(Duration::from_millis(6000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(0, 0)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(90, 0)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(90, -90)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-90, -90)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-90, 0)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(0, 0)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter).await?;
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_send_command_with_ack() -> Result<(), Box<dyn Error>> {
+		let cam: A8Mini = A8Mini::connect().await?;
+		cam.get_attitude_information().await?;
 		Ok(())
 	}
 }
