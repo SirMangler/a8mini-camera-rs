@@ -16,7 +16,7 @@ pub struct A8Mini {
 
 impl A8Mini {
 	pub async fn connect() -> Result<Self, Box<dyn Error>> {
-		Ok(Self::connect_to(constants::CAMERA_IP, constants::CAMERA_COMMAND_PORT, constants::CAMERA_HTTP_PORT, "8080", "80").await?)
+		Ok(Self::connect_to(constants::CAMERA_IP, constants::CAMERA_COMMAND_PORT, constants::CAMERA_HTTP_PORT, "8080", "8088").await?)
 	}
 
 	pub async fn connect_to(camera_ip: &str, camera_command_port: &str, camera_http_port: &str, local_command_port: &str, local_http_port: &str) -> Result<A8Mini, Box<dyn Error>> {
@@ -80,6 +80,43 @@ mod tests {
 	use super::*;
 	use std::thread::sleep;
 	use std::time::Duration;
+
+	#[tokio::test]
+	async fn test_control_lock()  -> Result<(), Box<dyn Error>> {
+		let cam: A8Mini = A8Mini::connect().await?;
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft).await?;
+		sleep(Duration::from_millis(500));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, 0)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, -900)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, 250)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-900, -900)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-900, 250)).await?;
+		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter).await?;
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_upside_down_mode()  -> Result<(), Box<dyn Error>> {
+		let cam: A8Mini = A8Mini::connect().await?;
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(0, 900)).await?;
+		// sleep(Duration::from_millis(1000));
+
+		// cam.send_command_blind(control::A8MiniSimpleCommand::SetFollowMode).await?;
+		Ok(())
+	}
 
 	#[tokio::test]
 	async fn test_send_simple_commands_blind() -> Result<(), Box<dyn Error>> {
