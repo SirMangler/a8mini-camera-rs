@@ -1,9 +1,14 @@
 use serde::Deserialize;
-
 use crate::{checksum, constants};
 
+/// Trait for camera commands
 pub trait Command {
     fn to_bytes(&self) -> Vec<u8>;
+}
+
+/// Trait for HTTP API queries
+pub trait HTTPQuery {
+    fn to_string(&self) -> String;
 }
 
 /// Enums for hardcoded simple commands.
@@ -81,6 +86,46 @@ impl Command for A8MiniComplexCommand {
     }
 }
 
+
+/// Enums for simple HTTP queries
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum A8MiniSimpleHTTPQuery {
+    GetDirectoriesPhotos,
+    GetDirectoriesVideos,
+    GetMediaCountPhotos,
+    GetMediaCountVideos,
+}
+
+impl HTTPQuery for A8MiniSimpleHTTPQuery {
+    fn to_string(&self) -> String {
+        match *self {
+            A8MiniSimpleHTTPQuery::GetDirectoriesPhotos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getdirectories?media_type=0".to_string(),
+            A8MiniSimpleHTTPQuery::GetDirectoriesVideos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getdirectories?media_type=1".to_string(),
+            A8MiniSimpleHTTPQuery::GetMediaCountPhotos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getmediacount?media_type=0&path=101SIYI_IMG".to_string(),
+            A8MiniSimpleHTTPQuery::GetMediaCountVideos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getmediacount?media_type=1&path=101SIYI_VID".to_string(),
+        }
+    }
+}
+
+
+/// Enums for complex HTTP queries
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum A8MiniComplexHTTPQUery {
+    GetPhoto(u8),
+    GetVideo(u8),
+}
+
+impl HTTPQuery for A8MiniComplexHTTPQUery {
+    fn to_string(&self) -> String {
+        match *self {
+            A8MiniComplexHTTPQUery::GetPhoto(photo_ind) => format!("http://192.168.144.25:82/photo/101SIYI_IMG/IMG_{:0>4}.jpg", photo_ind),
+            A8MiniComplexHTTPQUery::GetVideo(video_ind) => format!("http://192.168.144.25:82/video/101SIYI_VID/VID_{:0>4}.mpeg", video_ind),
+        }
+    }
+}
+
+
+/// Camera attitude information
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct A8MiniAtittude {
     pub theta_yaw: i16,
