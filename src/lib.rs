@@ -57,7 +57,7 @@ impl A8Mini {
 			return Err("No bytes received.".into());
 		}
 
-		info!("[COMMAND] Response of size {} received successfully.", recv_len);
+		info!("[COMMAND] Response of size {} received successfully: {:?}", recv_len, recv_buffer);
 		Ok(recv_buffer)
 	}
 
@@ -67,20 +67,34 @@ impl A8Mini {
 		Ok(attitude_info)
 	}
 
-	pub async fn make_http_query_blind(&self, query: String) -> Result<(), Box<dyn Error>> {
-		info!("[HTTP] Sending query with content: {:?}", query);
+	pub async fn send_http_query_blind<T: control::HTTPQuery>(&self, query: T) -> Result<(), Box<dyn Error>> {
+		info!("[HTTP] Sending query with content: {:?}", query.to_string());
 
-		if self.http_socket.send(query.as_bytes()).await? == 0 {
+		if self.http_socket.send(query.to_string().as_ref()).await? == 0 {
 			error!("[HTTP] No bytes sent.");
 			return Err("No bytes sent.".into());
 		}
 
+		info!("[HTTP] Query sent successfully.");
 		Ok(())
 	}
 
-	// pub async fn make_http_query(&self, query: String) -> Result<String, Box<dyn Error>> {
+	pub async fn send_http_query<T: control::HTTPQuery>(&self, query: T) -> Result<String, Box<dyn Error>> {
+		self.send_http_query_blind(query).await?;
+		let mut recv_buffer = [0; 256];
+
+		info!("[HTTP] Waiting for response.");
+
+		let recv_len = timeout(constants::RECV_TIMEOUT, self.http_socket.recv(&mut recv_buffer)).await??;
+		if recv_len == 0  {
+			error!("[HTTP] No response received.");
+			return Err("No response received.".into());
+		}
+
+		info!("[HTTP] Response of size {} received successfully: {:?}", recv_len, recv_buffer);
 		
-	// }
+		Ok(String::from_utf8(recv_buffer.to_vec())?)
+	}
 }
 
 
