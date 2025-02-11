@@ -1,4 +1,4 @@
-# A8mini-gimbal-camera-control-rust
+# A8mini-camera-rs
 
 This project is a Rust port of A8mini-gimbal-camera-control (C version), which was originally created by thiagolages. 
 During the porting process, certain architectural changes were made to better fit the Rust programming language.
