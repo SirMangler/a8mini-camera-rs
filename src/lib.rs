@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use log::{error, info};
 use std::error::Error;
 use bincode::deserialize;
 use tokio::{net::UdpSocket, time::timeout};
@@ -10,8 +11,8 @@ pub mod control;
 
 #[derive(Debug)]
 pub struct A8Mini {
-	command_socket: UdpSocket,
-	http_socket: UdpSocket,
+	pub command_socket: UdpSocket,
+	pub http_socket: UdpSocket,
 }
 
 impl A8Mini {
@@ -31,14 +32,15 @@ impl A8Mini {
 	}
 
 	pub async fn send_command_blind<T: control::Command>(&self, command: T) -> Result<(), Box<dyn Error>> {
-		println!("[DEBUG] Sending command with bytes: {:?}", command.to_bytes());
-		println!("[DEBUG] Sending command with DATA_LEN: {:?} | CMD_ID: {:?}", command.to_bytes()[3], command.to_bytes()[7]);
+		info!("[COMMAND] Sending command with bytes: {:?}", command.to_bytes());
+		info!("[COMMAND] Sending command with DATA_LEN: {:?} | CMD_ID: {:?}", command.to_bytes()[3], command.to_bytes()[7]);
 
 		if self.command_socket.send(command.to_bytes().as_slice()).await? == 0 {
+			error!("[COMMAND] No bytes sent.");
 			return Err("No bytes sent.".into());
 		}
 
-		println!("[DEBUG] Command sent successfully.");
+		info!("[COMMAND] Command sent successfully.");
 
 		Ok(())
 	}
@@ -47,14 +49,15 @@ impl A8Mini {
 		self.send_command_blind(command).await?;
 		let mut recv_buffer = [0; constants::RECV_BUFF_SIZE];
 
-		println!("[DEBUG] Waiting for response.");
+		info!("[COMMAND] Waiting for response.");
+
 		let recv_len = timeout(constants::RECV_TIMEOUT, self.command_socket.recv(&mut recv_buffer)).await??;
 		if recv_len == 0  {
+			error!("[COMMAND] No bytes received.");
 			return Err("No bytes received.".into());
 		}
 
-		println!("[DEBUG] Response of size {} received successfully.", recv_len);
-
+		info!("[COMMAND] Response of size {} received successfully.", recv_len);
 		Ok(recv_buffer)
 	}
 
@@ -64,11 +67,18 @@ impl A8Mini {
 		Ok(attitude_info)
 	}
 
-	// pub async fn make_http_query_blind(&self) -> Result<String, Box<dyn Error>> {
-		
-	// }
+	pub async fn make_http_query_blind(&self, query: String) -> Result<(), Box<dyn Error>> {
+		info!("[HTTP] Sending query with content: {:?}", query);
 
-	// pub async fn make_http_query(&self) -> Result<String, Box<dyn Error>> {
+		if self.http_socket.send(query.as_bytes()).await? == 0 {
+			error!("[HTTP] No bytes sent.");
+			return Err("No bytes sent.".into());
+		}
+
+		Ok(())
+	}
+
+	// pub async fn make_http_query(&self, query: String) -> Result<String, Box<dyn Error>> {
 		
 	// }
 }
@@ -85,9 +95,6 @@ mod tests {
 	async fn test_control_lock()  -> Result<(), Box<dyn Error>> {
 		let cam: A8Mini = A8Mini::connect().await?;
 
-		cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft).await?;
-		sleep(Duration::from_millis(500));
-
 		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, 0)).await?;
 		sleep(Duration::from_millis(1000));
 
@@ -96,6 +103,9 @@ mod tests {
 
 		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, 250)).await?;
 		sleep(Duration::from_millis(1000));
+
+		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-900, 0)).await?;
+		sleep(Duration::from_millis(2500));
 
 		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-900, -900)).await?;
 		sleep(Duration::from_millis(1000));
@@ -108,13 +118,12 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_upside_down_mode()  -> Result<(), Box<dyn Error>> {
+	async fn test_take_and_download_photo()  -> Result<(), Box<dyn Error>> {
 		let cam: A8Mini = A8Mini::connect().await?;
 
-		cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(0, 900)).await?;
-		// sleep(Duration::from_millis(1000));
+		cam.send_command_blind(control::A8MiniSimpleCommand::TakePicture).await?;
+		sleep(Duration::from_millis(500));
 
-		// cam.send_command_blind(control::A8MiniSimpleCommand::SetFollowMode).await?;
 		Ok(())
 	}
 
