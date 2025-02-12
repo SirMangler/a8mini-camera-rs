@@ -3,12 +3,11 @@
 version = 3
 
 [[package]]
-name = "A8mini-gimbal-camera-control-rust"
+name = "a8mini-camera-rs"
 version = "0.1.0"
 dependencies = [
  "bincode",
  "bytes",
- "log",
  "reqwest",
  "serde",
  "tokio",

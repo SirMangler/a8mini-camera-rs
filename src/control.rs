@@ -110,16 +110,16 @@ impl HTTPQuery for A8MiniSimpleHTTPQuery {
 
 /// Enums for complex HTTP queries
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum A8MiniComplexHTTPQUery {
+pub enum A8MiniComplexHTTPQuery {
     GetPhoto(u8),
     GetVideo(u8),
 }
 
-impl HTTPQuery for A8MiniComplexHTTPQUery {
+impl HTTPQuery for A8MiniComplexHTTPQuery {
     fn to_string(&self) -> String {
         match *self {
-            A8MiniComplexHTTPQUery::GetPhoto(photo_ind) => format!("http://192.168.144.25:82/photo/101SIYI_IMG/IMG_{:0>4}.jpg", photo_ind),
-            A8MiniComplexHTTPQUery::GetVideo(video_ind) => format!("http://192.168.144.25:82/video/101SIYI_VID/VID_{:0>4}.mpeg", video_ind),
+            A8MiniComplexHTTPQuery::GetPhoto(photo_ind) => format!("http://192.168.144.25:82/photo/101SIYI_IMG/IMG_{:0>4}.jpg", photo_ind),
+            A8MiniComplexHTTPQuery::GetVideo(video_ind) => format!("http://192.168.144.25:82/video/101SIYI_VID/VID_{:0>4}.mpeg", video_ind),
         }
     }
 }

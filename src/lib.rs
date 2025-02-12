@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use log::{error, info};
 use std::error::Error;
 use bincode::deserialize;
 use tokio::{net::UdpSocket, time::timeout};
@@ -32,15 +31,15 @@ impl A8Mini {
 	}
 
 	pub async fn send_command_blind<T: control::Command>(&self, command: T) -> Result<(), Box<dyn Error>> {
-		info!("[COMMAND] Sending command with bytes: {:?}", command.to_bytes());
-		info!("[COMMAND] Sending command with DATA_LEN: {:?} | CMD_ID: {:?}", command.to_bytes()[3], command.to_bytes()[7]);
+		println!("[COMMAND] Sending command with bytes: {:?}", command.to_bytes());
+		println!("[COMMAND] Sending command with DATA_LEN: {:?} | CMD_ID: {:?}", command.to_bytes()[3], command.to_bytes()[7]);
 
 		if self.command_socket.send(command.to_bytes().as_slice()).await? == 0 {
-			error!("[COMMAND] No bytes sent.");
+			println!("[COMMAND] No bytes sent.");
 			return Err("No bytes sent.".into());
 		}
 
-		info!("[COMMAND] Command sent successfully.");
+		println!("[COMMAND] Command sent successfully.");
 
 		Ok(())
 	}
@@ -49,15 +48,15 @@ impl A8Mini {
 		self.send_command_blind(command).await?;
 		let mut recv_buffer = [0; constants::RECV_BUFF_SIZE];
 
-		info!("[COMMAND] Waiting for response.");
+		println!("[COMMAND] Waiting for response.");
 
 		let recv_len = timeout(constants::RECV_TIMEOUT, self.command_socket.recv(&mut recv_buffer)).await??;
 		if recv_len == 0  {
-			error!("[COMMAND] No bytes received.");
+			println!("[COMMAND] No bytes received.");
 			return Err("No bytes received.".into());
 		}
 
-		info!("[COMMAND] Response of size {} received successfully: {:?}", recv_len, recv_buffer);
+		println!("[COMMAND] Response of size {} received successfully: {:?}", recv_len, recv_buffer);
 		Ok(recv_buffer)
 	}
 
@@ -67,33 +66,13 @@ impl A8Mini {
 		Ok(attitude_info)
 	}
 
-	pub async fn send_http_query_blind<T: control::HTTPQuery>(&self, query: T) -> Result<(), Box<dyn Error>> {
-		info!("[HTTP] Sending query with content: {:?}", query.to_string());
-
-		if self.http_socket.send(query.to_string().as_ref()).await? == 0 {
-			error!("[HTTP] No bytes sent.");
-			return Err("No bytes sent.".into());
-		}
-
-		info!("[HTTP] Query sent successfully.");
-		Ok(())
-	}
-
 	pub async fn send_http_query<T: control::HTTPQuery>(&self, query: T) -> Result<String, Box<dyn Error>> {
-		self.send_http_query_blind(query).await?;
-		let mut recv_buffer = [0; 256];
+		let response = reqwest::get(query.to_string()).await?;
 
-		info!("[HTTP] Waiting for response.");
+		println!("[HTTP] Waiting for response.");
 
-		let recv_len = timeout(constants::RECV_TIMEOUT, self.http_socket.recv(&mut recv_buffer)).await??;
-		if recv_len == 0  {
-			error!("[HTTP] No response received.");
-			return Err("No response received.".into());
-		}
-
-		info!("[HTTP] Response of size {} received successfully: {:?}", recv_len, recv_buffer);
-		
-		Ok(String::from_utf8(recv_buffer.to_vec())?)
+		let text = response.text().await?;
+		Ok(text)
 	}
 }
 
@@ -101,7 +80,10 @@ impl A8Mini {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
+	use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+
+use super::*;
 	use std::thread::sleep;
 	use std::time::Duration;
 
@@ -137,6 +119,8 @@ mod tests {
 
 		cam.send_command_blind(control::A8MiniSimpleCommand::TakePicture).await?;
 		sleep(Duration::from_millis(500));
+		let picture_bytes = cam.send_http_query(control::A8MiniComplexHTTPQuery::GetPhoto(3)).await?;
+		File::create("tmp.jpeg").await?.write_all(picture_bytes.as_bytes()).await?;
 
 		Ok(())
 	}
