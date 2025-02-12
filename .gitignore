@@ -1,1 +1,8 @@
-/target
+target
+.direnv/
+/result*
+.DS_Store
+
+# Added by cargo
+
+/.pre-commit-config.yaml

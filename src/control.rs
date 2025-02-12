@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use crate::{checksum, constants};
+use serde::Deserialize;
 
 /// Trait for camera commands
 pub trait Command {
@@ -14,14 +14,14 @@ pub trait HTTPQuery {
 /// Enums for hardcoded simple commands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum A8MiniSimpleCommand {
-    AutoCenter = 0, // handled ACK (sta)
-    RotateUp = 1, // handled ACK (sta)
-    RotateDown = 2, // handled ACK (sta)
-    RotateRight = 3, // handled ACK (sta)
-    RotateLeft = 4, // handled ACK (sta)
+    AutoCenter = 0,   // handled ACK (sta)
+    RotateUp = 1,     // handled ACK (sta)
+    RotateDown = 2,   // handled ACK (sta)
+    RotateRight = 3,  // handled ACK (sta)
+    RotateLeft = 4,   // handled ACK (sta)
     StopRotation = 5, // handled ACK (sta)
-    ZoomIn = 6, // handled ACK (sta)
-    ZoomOut = 7, // handled ACK (sta)
+    ZoomIn = 6,       // handled ACK (sta)
+    ZoomOut = 7,      // handled ACK (sta)
     ZoomMax = 8,
     MaxZoomInformation = 9,
     FocusIn = 10,
@@ -51,7 +51,6 @@ impl Command for A8MiniSimpleCommand {
     }
 }
 
-
 /// Enums for commands that require continuous values for data field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum A8MiniComplexCommand {
@@ -63,7 +62,7 @@ impl Command for A8MiniComplexCommand {
     fn to_bytes(&self) -> Vec<u8> {
         match *self {
             A8MiniComplexCommand::SetYawPitchSpeed(v_yaw, v_pitch) => {
-                let mut byte_arr: Vec<u8> = vec![0x55,0x66,0x01,0x02,0x00,0x00,0x00,0x07];
+                let mut byte_arr: Vec<u8> = vec![0x55, 0x66, 0x01, 0x02, 0x00, 0x00, 0x00, 0x07];
 
                 byte_arr.push(v_yaw.clamp(-100, 100) as u8);
                 byte_arr.push(v_pitch.clamp(-100, 100) as u8);
@@ -71,9 +70,9 @@ impl Command for A8MiniComplexCommand {
                 byte_arr.extend_from_slice(&checksum::crc16_calc(&byte_arr, 0));
 
                 byte_arr
-            },
+            }
             A8MiniComplexCommand::SetYawPitchAngle(theta_yaw, theta_pitch) => {
-                let mut byte_arr: Vec<u8> = vec![0x55,0x66,0x01,0x04,0x00,0x00,0x00,0x0e];
+                let mut byte_arr: Vec<u8> = vec![0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e];
 
                 byte_arr.extend_from_slice(&theta_yaw.clamp(-1350, 1350).to_be_bytes());
                 byte_arr.extend_from_slice(&theta_pitch.clamp(-900, 250).to_be_bytes());
@@ -81,11 +80,10 @@ impl Command for A8MiniComplexCommand {
                 byte_arr.extend_from_slice(&checksum::crc16_calc(&byte_arr, 0));
 
                 byte_arr
-            },
+            }
         }
     }
 }
-
 
 /// Enums for simple HTTP queries
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,7 +105,6 @@ impl HTTPQuery for A8MiniSimpleHTTPQuery {
     }
 }
 
-
 /// Enums for complex HTTP queries
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum A8MiniComplexHTTPQuery {
@@ -118,12 +115,17 @@ pub enum A8MiniComplexHTTPQuery {
 impl HTTPQuery for A8MiniComplexHTTPQuery {
     fn to_string(&self) -> String {
         match *self {
-            A8MiniComplexHTTPQuery::GetPhoto(photo_ind) => format!("http://192.168.144.25:82/photo/101SIYI_IMG/IMG_{:0>4}.jpg", photo_ind),
-            A8MiniComplexHTTPQuery::GetVideo(video_ind) => format!("http://192.168.144.25:82/video/101SIYI_VID/VID_{:0>4}.mpeg", video_ind),
+            A8MiniComplexHTTPQuery::GetPhoto(photo_ind) => format!(
+                "http://192.168.144.25:82/photo/101SIYI_IMG/IMG_{:0>4}.jpg",
+                photo_ind
+            ),
+            A8MiniComplexHTTPQuery::GetVideo(video_ind) => format!(
+                "http://192.168.144.25:82/video/101SIYI_VID/VID_{:0>4}.mpeg",
+                video_ind
+            ),
         }
     }
 }
-
 
 /// Camera attitude information
 #[derive(Debug, PartialEq, Eq, Deserialize)]
@@ -136,7 +138,6 @@ pub struct A8MiniAtittude {
     pub v_roll: i16,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -144,24 +145,30 @@ mod tests {
     #[test]
     fn test_complex_command_creation_angle() {
         let computed_command = A8MiniComplexCommand::SetYawPitchAngle(130, -20).to_bytes();
-        let expected_command: [u8; 14] = [0x55,0x66,0x01,0x04,0x00,0x00,0x00,0x0e,0x00,0x82,0xff,0xec,0x8f,0xad];
+        let expected_command: [u8; 14] = [
+            0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x82, 0xff, 0xec, 0x8f, 0xad,
+        ];
         assert_eq!(computed_command, expected_command);
     }
 
     #[test]
     fn test_complex_command_creation_speed() {
         let computed_command = A8MiniComplexCommand::SetYawPitchSpeed(104, -20).to_bytes();
-        let expected_command: [u8; 12] = [0x55,0x66,0x01,0x02,0x00,0x00,0x00,0x07,0x64,0xec,0xbd,0xdf];
+        let expected_command: [u8; 12] = [
+            0x55, 0x66, 0x01, 0x02, 0x00, 0x00, 0x00, 0x07, 0x64, 0xec, 0xbd, 0xdf,
+        ];
         assert_eq!(computed_command, expected_command);
     }
 
     #[test]
     fn test_byte_deserialization() {
-        let attitude_bytes: &[u8] = &[0x28,0x00,0x32,0x00,0x3c,0x00,0x04,0x00,0x05,0x00,0x06,0x00];
+        let attitude_bytes: &[u8] = &[
+            0x28, 0x00, 0x32, 0x00, 0x3c, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00,
+        ];
 
         // Note: little endian deserialize
         let computed_attitude_info: A8MiniAtittude = bincode::deserialize(attitude_bytes).unwrap();
-        
+
         let expected_attitude_info = A8MiniAtittude {
             theta_yaw: 40,
             theta_pitch: 50,
@@ -174,4 +181,3 @@ mod tests {
         assert_eq!(computed_attitude_info, expected_attitude_info);
     }
 }
-
