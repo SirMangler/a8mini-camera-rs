@@ -28,10 +28,10 @@ fn print_ascii_command_table() {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+  print_ascii_command_table();
+  
   loop {
     let command: &str;
-  
-    print_ascii_command_table();
     println!("Awaiting command:");
     let stdin = io::stdin();
     let buf = &mut String::new();
