@@ -1,5 +1,6 @@
 use crate::{checksum, constants};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
 
 /// Trait for camera commands
 pub trait Command {
@@ -125,6 +126,31 @@ impl HTTPQuery for A8MiniComplexHTTPQuery {
             ),
         }
     }
+}
+
+/// Response json format
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HTTPResponse {
+    pub code: i32,
+    pub data: HTTPResponseData,
+    pub success: bool,
+    pub message: String,
+}
+
+/// Response json data format
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HTTPResponseData {
+    pub media_type: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub directories: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub count: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub list: Option<String>,
 }
 
 /// Camera attitude information

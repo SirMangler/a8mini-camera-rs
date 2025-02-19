@@ -117,13 +117,23 @@ impl A8Mini {
     pub async fn send_http_query<T: control::HTTPQuery>(
         &self,
         query: T,
-    ) -> Result<String, Box<dyn Error>> {
+    ) -> Result<control::HTTPResponse, Box<dyn Error>> {
         let response = reqwest::get(query.to_string()).await?;
-
         println!("[HTTP] Waiting for response.");
 
-        let text = response.text().await?;
-        Ok(text)
+        let json = response.json::<control::HTTPResponse>().await?;
+        Ok(json)
+    }
+
+    pub async fn send_http_image_query<T: control::HTTPQuery>(
+        &self,
+        query: T,
+    ) -> Result<Vec<u8>, Box<dyn Error>> {
+        let response = reqwest::get(query.to_string()).await?;
+        println!("[HTTP] Waiting for response.");
+
+        let image_bytes = response.bytes().await?;
+        Ok(image_bytes.to_vec())
     }
 }
 
@@ -176,12 +186,19 @@ mod tests {
         cam.send_command_blind(control::A8MiniSimpleCommand::TakePicture)
             .await?;
         sleep(Duration::from_millis(500));
+        let num_pictures = cam
+            .send_http_query(control::A8MiniSimpleHTTPQuery::GetMediaCountPhotos)
+            .await?
+            .data
+            .count
+            .unwrap();
+        dbg!(num_pictures);
         let picture_bytes = cam
-            .send_http_query(control::A8MiniComplexHTTPQuery::GetPhoto(3))
+            .send_http_image_query(control::A8MiniComplexHTTPQuery::GetPhoto(num_pictures as u8))
             .await?;
         File::create("tmp.jpeg")
             .await?
-            .write_all(picture_bytes.as_bytes())
+            .write_all(&picture_bytes)
             .await?;
 
         Ok(())
