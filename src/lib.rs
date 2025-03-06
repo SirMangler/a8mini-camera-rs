@@ -122,6 +122,7 @@ impl A8Mini {
         println!("[HTTP] Waiting for response.");
 
         let json = response.json::<control::HTTPResponse>().await?;
+        println!("[HTTP] Received response.");
         Ok(json)
     }
 
@@ -133,6 +134,7 @@ impl A8Mini {
         println!("[HTTP] Waiting for response.");
 
         let image_bytes = response.bytes().await?;
+        println!("[HTTP] Received response.");
         Ok(image_bytes.to_vec())
     }
 }
@@ -183,7 +185,7 @@ mod tests {
     async fn test_take_and_download_photo() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::TakePicture)
+        cam.send_command(control::A8MiniSimpleCommand::TakePicture)
             .await?;
         sleep(Duration::from_millis(500));
         let num_pictures = cam
@@ -192,7 +194,6 @@ mod tests {
             .data
             .count
             .unwrap();
-        dbg!(num_pictures);
         let picture_bytes = cam
             .send_http_image_query(control::A8MiniComplexHTTPQuery::GetPhoto(num_pictures as u8))
             .await?;
