@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::io;
 
-use a8mini_camera_rs::control::A8MiniSimpleCommand;
+use a8mini_camera_rs::control::{A8MiniSimpleCommand, A8MiniComplexCommand};
 use a8mini_camera_rs::A8Mini;
 
 
@@ -11,7 +11,7 @@ fn print_ascii_command_table() {
     "MaxZoomInformation", "FocusIn", "FocusOut", "TakePicture", "RecordVideo", "Rotate100100", "CameraInformation",
     "AutoFocus", "HardwareIDInformation", "FirmwareVersionInformation", "SetLockMode", "SetFollowMode", "SetFPVMode",
     "AttitudeInformation", "SetVideoOutputHDMI", "SetVideoOutputCVBS", "SetVideoOutputOff", "LaserRangefinderInformation", 
-    "RebootCamera", "RebootGimbal",
+    "RebootCamera", "RebootGimbal", "SetYawPitchSpeed(yaw, pitch)", "SetYawPitchAngle(yaw, pitch)"
   ];
 
   let header = "+----+------------------------------+";
@@ -31,14 +31,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
   print_ascii_command_table();
   
   loop {
-    let command: &str;
+    let full_command: &str;
     println!("Awaiting command:");
     let stdin = io::stdin();
     let buf = &mut String::new();
     stdin.read_line(buf)?;
-    command = buf.strip_suffix("\n").unwrap();
+    full_command = buf.strip_suffix("\n").unwrap();
 
-    let command_enum: Option<A8MiniSimpleCommand> = match command {
+    let destructured_command: Vec<&str> = full_command.split(" ").collect();
+
+    let command: &str = destructured_command[0];
+    let command_yaw: i16 = 0;
+    let command_pitch: i16 = 0;
+    
+    if destructured_command.len() == 3 {
+      destructured_command[1].parse().unwrap_or(0);
+      destructured_command[2].parse().unwrap_or(0);
+    }
+
+    let simple_command_enum: Option<A8MiniSimpleCommand> = match command {
       "0"   | "AutoCenter" => Some(A8MiniSimpleCommand::AutoCenter),
       "1"   | "RotateUp" => Some(A8MiniSimpleCommand::RotateUp),
       "2"   | "RotateDown" => Some(A8MiniSimpleCommand::RotateDown),
@@ -71,12 +82,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
       _ => None,
     };
 
-    if command_enum.is_some() {
-      println!("Sending {:?}", command_enum);
+    if simple_command_enum.is_some() {
+      println!("Sending Simple Command {:?}", simple_command_enum.unwrap());
       let camera: A8Mini = A8Mini::connect().await?;
-      camera.send_command_blind(command_enum.unwrap()).await?;
+      camera.send_command_blind(simple_command_enum.unwrap()).await?;
+      continue;
     }
+    
+    let complex_command_enum: Option<A8MiniComplexCommand> = match (command, command_yaw, command_pitch) {
+      ("29", yaw, pitch) | ("SetYawPitchSpeed", yaw, pitch) => Some(A8MiniComplexCommand::SetYawPitchSpeed(yaw as i8, pitch as i8)),
+      ("30", yaw, pitch) | ("SetYawPitchAngle", yaw, pitch) => Some(A8MiniComplexCommand::SetYawPitchAngle(yaw, pitch)),
+      _ => None,
+    };
+
+    if complex_command_enum.is_some() {
+      println!("Sending Complex Command {:?}", complex_command_enum.unwrap());
+      let camera: A8Mini = A8Mini::connect().await?;
+      camera.send_command_blind(complex_command_enum.unwrap()).await?;
+      continue;
+    }
+
+    // TODO: restructure this loop in a smarter way instead of spamming goto's
     else {
+      println!("Unrecognized Command: {:?}", destructured_command);
       break;
     }
   }
@@ -93,8 +121,8 @@ mod aarya_tests {
   #[tokio::test]
   async fn test_manual() -> Result<(), Box<dyn Error>> {
     let cam: A8Mini = A8Mini::connect().await?;
-    cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(0, -90)).await?;
-    // cam.send_command_blind(control::A8MiniSimpleCommand::RecordVideo).await?;
+    cam.send_command(control::A8MiniComplexCommand::SetYawPitchAngle(0, -90)).await?;
+    cam.send_command(control::A8MiniSimpleCommand::RecordVideo).await?;
     Ok(())
   }
 }
