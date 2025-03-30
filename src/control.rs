@@ -101,7 +101,7 @@ impl HTTPQuery for A8MiniSimpleHTTPQuery {
             A8MiniSimpleHTTPQuery::GetDirectoriesPhotos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getdirectories?media_type=0".to_string(),
             A8MiniSimpleHTTPQuery::GetDirectoriesVideos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getdirectories?media_type=1".to_string(),
             A8MiniSimpleHTTPQuery::GetMediaCountPhotos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getmediacount?media_type=0&path=101SIYI_IMG".to_string(),
-            A8MiniSimpleHTTPQuery::GetMediaCountVideos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getmediacount?media_type=1&path=101SIYI_VID".to_string(),
+            A8MiniSimpleHTTPQuery::GetMediaCountVideos => "http://192.168.144.25:82/cgi-bin/media.cgi/api/v1/getmediacount?media_type=1&path=100SIYI_VID".to_string(),
         }
     }
 }
@@ -121,7 +121,7 @@ impl HTTPQuery for A8MiniComplexHTTPQuery {
                 photo_ind
             ),
             A8MiniComplexHTTPQuery::GetVideo(video_ind) => format!(
-                "http://192.168.144.25:82/video/101SIYI_VID/VID_{:0>4}.mpeg",
+                "http://192.168.144.25:82/video/100SIYI_VID/REC_{:0>4}.mp4",
                 video_ind
             ),
         }
