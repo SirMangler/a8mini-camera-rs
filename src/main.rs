@@ -111,18 +111,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
   Ok(())
 }
-
-
-#[cfg(test)]
-mod aarya_tests {
-  use super::*;
-  use a8mini_camera_rs::control;
-
-  #[tokio::test]
-  async fn test_manual() -> Result<(), Box<dyn Error>> {
-    let cam: A8Mini = A8Mini::connect().await?;
-    cam.send_command(control::A8MiniComplexCommand::SetYawPitchAngle(0, -90)).await?;
-    cam.send_command(control::A8MiniSimpleCommand::RecordVideo).await?;
-    Ok(())
-  }
-}

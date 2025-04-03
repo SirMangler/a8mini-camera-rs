@@ -148,6 +148,7 @@ mod tests {
     use std::thread::sleep;
     use std::time::Duration;
 
+    #[ignore]
     #[tokio::test]
     async fn test_control_lock() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
@@ -181,6 +182,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_take_and_download_photo() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
@@ -205,6 +207,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_send_simple_commands_blind() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
@@ -241,6 +244,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_send_complex_commands_blind() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
@@ -286,6 +290,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_send_command_with_ack() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;

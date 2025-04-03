@@ -31,7 +31,7 @@ pub enum A8MiniSimpleCommand {
     RecordVideo = 13, // no ACK
     Rotate100100 = 14,
     CameraInformation = 15,
-    AutoFocus = 16, // handled ACK (sta)
+    AutoFocus = 16,   // handled ACK (sta)
     HardwareIDInformation = 17,
     FirmwareVersionInformation = 18,
     SetLockMode = 19,
