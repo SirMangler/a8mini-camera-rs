@@ -39,15 +39,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     full_command = buf.strip_suffix("\n").unwrap();
 
     let destructured_command: Vec<&str> = full_command.split(" ").collect();
-
     let command: &str = destructured_command[0];
-    let command_yaw: i16 = 0;
-    let command_pitch: i16 = 0;
-    
-    if destructured_command.len() == 3 {
-      destructured_command[1].parse().unwrap_or(0);
-      destructured_command[2].parse().unwrap_or(0);
-    }
 
     let simple_command_enum: Option<A8MiniSimpleCommand> = match command {
       "0"   | "AutoCenter" => Some(A8MiniSimpleCommand::AutoCenter),
@@ -79,6 +71,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
       "26"  | "LaserRangefinderInformation" => Some(A8MiniSimpleCommand::LaserRangefinderInformation),
       "27"  | "RebootCamera" => Some(A8MiniSimpleCommand::RebootCamera),
       "28"  | "RebootGimbal" => Some(A8MiniSimpleCommand::RebootGimbal),
+      "29"  | "Resolution4k" => Some(A8MiniSimpleCommand::Resolution4k),
       _ => None,
     };
 
@@ -87,6 +80,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
       let camera: A8Mini = A8Mini::connect().await?;
       camera.send_command_blind(simple_command_enum.unwrap()).await?;
       continue;
+    }
+
+    let command_yaw: i16 = 0;
+    let command_pitch: i16 = 0;
+    
+    if destructured_command.len() == 3 {
+      destructured_command[1].parse().unwrap_or(0);
+      destructured_command[2].parse().unwrap_or(0);
     }
     
     let complex_command_enum: Option<A8MiniComplexCommand> = match (command, command_yaw, command_pitch) {

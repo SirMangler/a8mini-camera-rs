@@ -44,6 +44,7 @@ pub enum A8MiniSimpleCommand {
     LaserRangefinderInformation = 26,
     RebootCamera = 27,
     RebootGimbal = 28,
+    Resolution4k = 29,
 }
 
 impl Command for A8MiniSimpleCommand {
@@ -57,6 +58,8 @@ impl Command for A8MiniSimpleCommand {
 pub enum A8MiniComplexCommand {
     SetYawPitchSpeed(i8, i8),
     SetYawPitchAngle(i16, i16),
+    GetCodecSpecs(u8), // TODO: WIP
+    SetCodecSpecs(u8, u8, u16, u16, u16, u8), // TODO: WIP
 }
 
 impl Command for A8MiniComplexCommand {
@@ -71,7 +74,7 @@ impl Command for A8MiniComplexCommand {
                 byte_arr.extend_from_slice(&checksum::crc16_calc(&byte_arr, 0));
 
                 byte_arr
-            }
+            },
             A8MiniComplexCommand::SetYawPitchAngle(theta_yaw, theta_pitch) => {
                 let mut byte_arr: Vec<u8> = vec![0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x0e];
 
@@ -79,6 +82,28 @@ impl Command for A8MiniComplexCommand {
                 byte_arr.extend_from_slice(&theta_pitch.clamp(-900, 250).to_be_bytes());
 
                 byte_arr.extend_from_slice(&checksum::crc16_calc(&byte_arr, 0));
+
+                byte_arr
+            },
+            A8MiniComplexCommand::GetCodecSpecs(stream_type) => {
+                let mut byte_arr: Vec<u8> = vec![0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x20];
+
+                byte_arr.extend_from_slice(&stream_type.clamp(0, 2).to_be_bytes());
+
+                byte_arr
+            }
+            A8MiniComplexCommand::SetCodecSpecs(stream_type, video_enc_type, resolution_l, resolution_h, video_bitrate, _) => {
+                let mut byte_arr: Vec<u8> = vec![0x55, 0x66, 0x01, 0x04, 0x00, 0x00, 0x00, 0x21];
+
+                byte_arr.extend_from_slice(&stream_type.clamp(0, 2).to_be_bytes());
+                byte_arr.extend_from_slice(&video_enc_type.clamp(1, 2).to_be_bytes());
+
+                // TODO: make sure resolution_l and resolution_h are clamped to only 1920/1280 and 1080/720 respectively
+                byte_arr.extend_from_slice(&resolution_l.to_be_bytes());
+                byte_arr.extend_from_slice(&resolution_h.to_be_bytes());
+                
+                // TODO: make sure video bitrate is reasonable
+                byte_arr.extend_from_slice(&video_bitrate.to_be_bytes());
 
                 byte_arr
             }
@@ -121,7 +146,7 @@ impl HTTPQuery for A8MiniComplexHTTPQuery {
                 photo_ind
             ),
             A8MiniComplexHTTPQuery::GetVideo(video_ind) => format!(
-                "http://192.168.144.25:82/video/100SIYI_VID/REC_{:0>4}.mp4",
+                "http://192.168.144.25:82/photo/100SIYI_VID/REC_{:0>4}.mp4",
                 video_ind
             ),
         }
