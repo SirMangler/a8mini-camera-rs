@@ -11,7 +11,7 @@ fn print_ascii_command_table() {
     "MaxZoomInformation", "FocusIn", "FocusOut", "TakePicture", "RecordVideo", "Rotate100100", "CameraInformation",
     "AutoFocus", "HardwareIDInformation", "FirmwareVersionInformation", "SetLockMode", "SetFollowMode", "SetFPVMode",
     "AttitudeInformation", "SetVideoOutputHDMI", "SetVideoOutputCVBS", "SetVideoOutputOff", "LaserRangefinderInformation", 
-    "RebootCamera", "RebootGimbal", "SetYawPitchSpeed(yaw, pitch)", "SetYawPitchAngle(yaw, pitch)"
+    "RebootCamera", "RebootGimbal", "Resolution4k", "SetYawPitchSpeed(yaw, pitch)", "SetYawPitchAngle(yaw, pitch)"
   ];
 
   let header = "+----+------------------------------+";

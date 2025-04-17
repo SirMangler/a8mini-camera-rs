@@ -9,12 +9,15 @@ pub mod constants;
 pub mod control;
 
 #[derive(Debug)]
+/// Represents the A8Mini camera API with a dedicate UDP socket for both `Command`s and `HTTPQuery`s.
 pub struct A8Mini {
     pub command_socket: UdpSocket,
     pub http_socket: UdpSocket,
 }
 
 impl A8Mini {
+    /// Connect to and creates a new `A8Mini` using default ip address `192.168.144.25` and default port 37260 and port 82. 
+    /// Remote ports are mapped to port 8080 and port 8088 on local.
     pub async fn connect() -> Result<Self, Box<dyn Error>> {
         Ok(Self::connect_to(
             constants::CAMERA_IP,
@@ -26,6 +29,7 @@ impl A8Mini {
         .await?)
     }
 
+    // Connects to and creates a new `A8Mini` given network args.
     pub async fn connect_to(
         camera_ip: &str,
         camera_command_port: &str,
@@ -49,6 +53,7 @@ impl A8Mini {
         Ok(camera)
     }
 
+    /// Sends a `control::Command` blind. This should be used for all commands that don't have a ACK.
     pub async fn send_command_blind<T: control::Command>(
         &self,
         command: T,
@@ -63,21 +68,19 @@ impl A8Mini {
             command.to_bytes()[7]
         );
 
-        if self
-            .command_socket
-            .send(command.to_bytes().as_slice())
-            .await?
-            == 0
-        {
+        let send_len = self.command_socket.send(command.to_bytes().as_slice()).await?;
+
+        if send_len == 0 {
             println!("[COMMAND] No bytes sent.");
             return Err("No bytes sent.".into());
         }
 
-        println!("[COMMAND] Command sent successfully.");
+        println!("[COMMAND] Sent {} bytes successfully.", send_len);
 
         Ok(())
     }
 
+    /// Sends a `control::Command` expecting an ACK. Returns received ACK response bytes.
     pub async fn send_command<T: control::Command>(
         &self,
         command: T,
@@ -104,6 +107,8 @@ impl A8Mini {
         Ok(recv_buffer)
     }
 
+    /// Retrieves attitude information from the camera. 
+    /// Can be used as a system connectivity check.
     pub async fn get_attitude_information(
         &self,
     ) -> Result<control::A8MiniAtittude, Box<dyn Error>> {
@@ -114,6 +119,7 @@ impl A8Mini {
         Ok(attitude_info)
     }
 
+    /// Sends a `control::HTTPQuery` and returns the corresponding received `control::HTTPResponse`.
     pub async fn send_http_query<T: control::HTTPQuery>(
         &self,
         query: T,
@@ -126,7 +132,8 @@ impl A8Mini {
         Ok(json)
     }
 
-    pub async fn send_http_image_query<T: control::HTTPQuery>(
+    /// Retrieves an image or video (WIP) from the camera.
+    pub async fn send_http_media_query<T: control::HTTPQuery>(
         &self,
         query: T,
     ) -> Result<Vec<u8>, Box<dyn Error>> {
@@ -141,46 +148,14 @@ impl A8Mini {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::control::*;
+
+    use std::thread::sleep;
+    use std::time::Duration;
     use tokio::fs::File;
     use tokio::io::AsyncWriteExt;
 
-    use super::*;
-    use std::thread::sleep;
-    use std::time::Duration;
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_control_lock() -> Result<(), Box<dyn Error>> {
-        let cam: A8Mini = A8Mini::connect().await?;
-
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, 0))
-            .await?;
-        sleep(Duration::from_millis(1000));
-
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, -900))
-            .await?;
-        sleep(Duration::from_millis(1000));
-
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(900, 250))
-            .await?;
-        sleep(Duration::from_millis(1000));
-
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-900, 0))
-            .await?;
-        sleep(Duration::from_millis(2500));
-
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-900, -900))
-            .await?;
-        sleep(Duration::from_millis(1000));
-
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-900, 250))
-            .await?;
-        sleep(Duration::from_millis(1000));
-
-        cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter)
-            .await?;
-        Ok(())
-    }
 
     #[ignore]
     #[tokio::test]
@@ -197,7 +172,7 @@ mod tests {
             .count
             .unwrap();
         let picture_bytes = cam
-            .send_http_image_query(control::A8MiniComplexHTTPQuery::GetPhoto(num_pictures as u8))
+            .send_http_media_query(control::A8MiniComplexHTTPQuery::GetPhoto(num_pictures as u8))
             .await?;
         File::create("tmp.jpeg")
             .await?
@@ -212,35 +187,27 @@ mod tests {
     async fn test_send_simple_commands_blind() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft).await?;
         sleep(Duration::from_millis(500));
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::RotateRight)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::RotateRight).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::RotateLeft).await?;
         sleep(Duration::from_millis(500));
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::StopRotation)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::StopRotation).await?;
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::RotateUp)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::RotateUp).await?;
         sleep(Duration::from_millis(500));
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::RotateDown)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::RotateDown).await?;
         sleep(Duration::from_millis(500));
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::StopRotation)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::StopRotation).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter).await?;
         Ok(())
     }
 
@@ -249,44 +216,34 @@ mod tests {
     async fn test_send_complex_commands_blind() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(50, 50))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(50, 50)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(50, 10))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(50, 10)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(-25, -15))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(-25, -15)).await?;
         sleep(Duration::from_millis(6000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(0, 0))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchSpeed(0, 0)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(90, 0))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(90, 0)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(90, -90))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(90, -90)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-90, -90))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-90, -90)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-90, 0))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(-90, 0)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(0, 0))
-            .await?;
+        cam.send_command_blind(control::A8MiniComplexCommand::SetYawPitchAngle(0, 0)).await?;
         sleep(Duration::from_millis(1000));
 
-        cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter)
-            .await?;
+        cam.send_command_blind(control::A8MiniSimpleCommand::AutoCenter).await?;
         Ok(())
     }
 
@@ -294,7 +251,26 @@ mod tests {
     #[tokio::test]
     async fn test_send_command_with_ack() -> Result<(), Box<dyn Error>> {
         let cam: A8Mini = A8Mini::connect().await?;
-        cam.get_attitude_information().await?;
+        println!("{:?}", cam.get_attitude_information().await?);
+        Ok(())
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn aarya_tests() -> Result<(), Box<dyn Error>> {
+        let cam: A8Mini = A8Mini::connect().await?;
+        // cam.send_command_blind(A8MiniComplexCommand::SetYawPitchAngle(0, 900)).await?;
+        // cam.send_command_blind(A8MiniSimpleCommand::RecordVideo).await?;
+        // println!("{:?}", cam.send_http_query(A8MiniSimpleHTTPQuery::GetMediaCountVideos).await?);
+
+        // cam.send_command_blind(A8MiniComplexCommand::SetCodecSpecs(0, 2, 1920, 1080, 4000, 0)).await?;
+
+        // cam.send_command_blind(A8MiniSimpleCommand::Resolution4k).await?;
+        cam.send_command_blind(A8MiniSimpleCommand::RecordVideo).await?;
+        // sleep(Duration::from_millis(10000));
+        // cam.send_command_blind(A8MiniSimpleCommand::RecordVideo).await?;
+        
+
         Ok(())
     }
 }
