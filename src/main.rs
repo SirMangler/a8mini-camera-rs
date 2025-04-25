@@ -11,7 +11,7 @@ fn print_ascii_command_table() {
     "MaxZoomInformation", "FocusIn", "FocusOut", "TakePicture", "RecordVideo", "Rotate100100", "CameraInformation",
     "AutoFocus", "HardwareIDInformation", "FirmwareVersionInformation", "SetLockMode", "SetFollowMode", "SetFPVMode",
     "AttitudeInformation", "SetVideoOutputHDMI", "SetVideoOutputCVBS", "SetVideoOutputOff", "LaserRangefinderInformation", 
-    "RebootCamera", "RebootGimbal", "Resolution4k", "SetYawPitchSpeed(yaw, pitch)", "SetYawPitchAngle(yaw, pitch)"
+    "RebootCamera", "RebootGimbal", "Resolution4k", "Heartbeat", "SetYawPitchSpeed(yaw, pitch)", "SetYawPitchAngle(yaw, pitch)"
   ];
 
   let header = "+----+------------------------------+";
@@ -72,6 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
       "27"  | "RebootCamera" => Some(A8MiniSimpleCommand::RebootCamera),
       "28"  | "RebootGimbal" => Some(A8MiniSimpleCommand::RebootGimbal),
       "29"  | "Resolution4k" => Some(A8MiniSimpleCommand::Resolution4k),
+      "30"  | "Heartbeat" => Some(A8MiniSimpleCommand::Heartbeat),
       _ => None,
     };
 
