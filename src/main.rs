@@ -3,6 +3,9 @@ use std::io;
 
 use a8mini_camera_rs::control::{A8MiniComplexCommand, A8MiniSimpleCommand, A8MiniSimpleHTTPQuery, A8MiniComplexHTTPQuery};
 use a8mini_camera_rs::A8Mini;
+use chrono::Utc;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
 
 fn print_ascii_command_table() {
@@ -174,10 +177,41 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     if complex_query_enum.is_some() {
-      println!("Sending Complex HTTP Query {:?}", complex_query_enum.unwrap());
+      let complex_query = complex_query_enum.unwrap();
+      println!("Sending Complex HTTP Query {:?}", complex_query);
       let camera: A8Mini = A8Mini::connect().await?;
-      let response = camera.send_http_query(complex_query_enum.unwrap()).await?;
-      println!("{:?}", response);
+      
+      match complex_query {
+        A8MiniComplexHTTPQuery::GetPhoto(_) => {
+          let image_bytes = camera.send_http_media_query(complex_query).await?;
+
+          let dir = "./tmp";
+          let timestamp = Utc::now().timestamp_millis();
+          let image_path = format!("{}/IMG-{}.jpeg", dir, timestamp);
+
+          File::create(&image_path)
+              .await?
+              .write_all(&image_bytes)
+              .await?;
+        },
+        A8MiniComplexHTTPQuery::GetVideo(_) => {
+          let video_bytes = camera.send_http_media_query(complex_query).await?;
+
+          let dir = "./tmp";
+          let timestamp = Utc::now().timestamp_millis();
+          let vid_path = format!("{}/VID-{}.mp4", dir, timestamp);
+
+          File::create(&vid_path)
+              .await?
+              .write_all(&video_bytes)
+              .await?;
+        },
+        // _ => {
+        //   let response = camera.send_http_query(complex_query).await?;
+        //   println!("{:?}", response);
+        // }
+      };
+      
       continue;
     }
   }
