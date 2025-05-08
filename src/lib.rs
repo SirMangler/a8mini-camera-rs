@@ -29,7 +29,21 @@ impl A8Mini {
         .await?)
     }
 
-    // Connects to and creates a new `A8Mini` given network args.
+    /// Repeatedly tries to reconnect a total of `max_iter`` times
+    pub async fn connect_yapping(
+        max_iter: i32,
+    ) -> Result<A8Mini, Box<dyn Error>> {
+        for _ in 1..max_iter {
+            let connect_attempt = Self::connect().await;
+            if connect_attempt.is_ok() {
+                return Ok(connect_attempt.unwrap());
+            }
+        }
+
+        Err("max_iter reached".into())
+    }
+
+    /// Connects to and creates a new `A8Mini` given network args.
     pub async fn connect_to(
         camera_ip: &str,
         camera_command_port: &str,
