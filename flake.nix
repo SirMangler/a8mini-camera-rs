@@ -16,7 +16,7 @@
         src = pkgs.lib.cleanSource ./.;
 
         a8mini-camera-rs = naersk-lib.buildPackage {
-          pname = "a8min-camera-rs";
+          pname = "a8mini-camera-rs";
           inherit src;
         };
 
