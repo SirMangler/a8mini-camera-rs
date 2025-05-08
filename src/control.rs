@@ -143,8 +143,8 @@ impl HTTPQuery for A8MiniSimpleHTTPQuery {
 /// Enums for complex HTTP queries
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum A8MiniComplexHTTPQuery {
-    GetPhoto(u8),
-    GetVideo(u8),
+    GetPhoto(u32),
+    GetVideo(u32),
 }
 
 impl HTTPQuery for A8MiniComplexHTTPQuery {

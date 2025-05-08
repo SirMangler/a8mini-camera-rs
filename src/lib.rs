@@ -186,7 +186,7 @@ mod tests {
             .count
             .unwrap();
         let picture_bytes = cam
-            .send_http_media_query(control::A8MiniComplexHTTPQuery::GetPhoto(num_pictures as u8))
+            .send_http_media_query(control::A8MiniComplexHTTPQuery::GetPhoto(num_pictures as u32))
             .await?;
         File::create("tmp.jpeg")
             .await?

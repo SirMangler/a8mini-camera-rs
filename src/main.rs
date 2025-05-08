@@ -33,8 +33,8 @@ fn print_ascii_command_table() {
   ];
 
   let complex_queries = [
-    "GetPhoto(u8)",
-    "GetVideo(u8)",
+    "GetPhoto(u32)",
+    "GetVideo(u32)",
   ];
 
   let all_printed = [
@@ -166,12 +166,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let complex_query_enum: Option<A8MiniComplexHTTPQuery> = match command {
       "GetPhoto" => {
-        let photo_ind: u8 = destructured_command[1].parse().unwrap_or(0);
-        Some(A8MiniComplexHTTPQuery::GetPhoto(photo_ind))
+        let photo_ind: u32 = destructured_command[1].parse().unwrap_or(0);
+        Some(A8MiniComplexHTTPQuery::GetPhoto(photo_ind as u32))
       }
       "GetVideo" => {
-        let video_ind: u8 = destructured_command[1].parse().unwrap_or(0);
-        Some(A8MiniComplexHTTPQuery::GetVideo(video_ind))
+        let video_ind: u32 = destructured_command[1].parse().unwrap_or(0);
+        Some(A8MiniComplexHTTPQuery::GetVideo(video_ind as u32))
       }
       _ => None,
     };
